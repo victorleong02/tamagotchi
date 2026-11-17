@@ -13,11 +13,14 @@ body {
   padding: 30px;
   text-align: center;
   width: 300px;
+  position: relative; /* lets floating emoji position themselves inside the card */
 }
 
 #pet {
   font-size: 100px;
   margin: 20px 0;
+  display: inline-block; /* transforms need this */
+  animation: bounce 1.2s ease-in-out infinite;
 }
 
 button {
@@ -56,4 +59,84 @@ button {
   background: #fff3cd;
   border: 2px solid #333;
   border-radius: 10px;
+}
+
+#mute-btn {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  padding: 4px 8px;
+}
+
+@keyframes bounce {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-10px);
+  }
+}
+
+@keyframes shake {
+  0%,
+  100% {
+    transform: translateX(0);
+  }
+  25% {
+    transform: translateX(-6px);
+  }
+  75% {
+    transform: translateX(6px);
+  }
+}
+
+@keyframes pop {
+  0% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.3);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+
+/* Mood-based animation: these match data-mood, set from JS */
+#pet[data-mood="sick"] {
+  animation: shake 0.4s linear infinite;
+}
+#pet[data-mood="tired"] {
+  animation: bounce 3s ease-in-out infinite;
+}
+#pet[data-mood="dead"] {
+  animation: none;
+  filter: grayscale(1);
+}
+
+/* One-time reaction when you click an action */
+#pet.pop {
+  animation: pop 0.3s ease-out;
+}
+
+/* Floating emoji */
+.floater {
+  position: absolute;
+  left: 50%;
+  top: 120px;
+  font-size: 30px;
+  pointer-events: none; /* clicks pass through it */
+  animation: floatUp 1s ease-out forwards;
+}
+
+@keyframes floatUp {
+  from {
+    opacity: 1;
+    transform: translateY(0);
+  }
+  to {
+    opacity: 0;
+    transform: translateY(-70px);
+  }
 }

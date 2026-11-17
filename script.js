@@ -41,7 +41,7 @@ let pet = newPet();
 
 const SICK_AT = 8; // neglect level where the pet gets sick
 const DEATH_AT = 20; // neglect level where the pet dies
-const TICK_MS = 500; // time between ticks (3 seconds)
+const TICK_MS = 1000; // time between ticks (1 second)
 const SAVE_KEY = "tamagotchi-save"; // the name our save is stored under
 const MAX_CATCHUP = 200; // most ticks we'll replay after being away
 
@@ -68,12 +68,85 @@ const pauseBtn = document.getElementById("pause-btn");
 const pauseMenu = document.getElementById("pause-menu");
 const resumeBtn = document.getElementById("resume-btn");
 const pauseRestartBtn = document.getElementById("pause-restart-btn");
+const gameEl = document.getElementById("game");
+const muteBtn = document.getElementById("mute-btn");
+
+// SOUND: tiny beeps made with the Web Audio API
+const MUTE_KEY = "tamagotchi-muted";
+let muted = localStorage.getItem(MUTE_KEY) === "true";
+let audioCtx = null;
+
+function beep(freq, duration) {
+  if (muted) return;
+  if (!audioCtx) {
+    audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+  }
+  const osc = audioCtx.createOscillator();
+  const gain = audioCtx.createGain();
+  osc.type = "square";
+  osc.frequency.value = freq;
+  gain.gain.setValueAtTime(0.08, audioCtx.currentTime);
+  gain.gain.exponentialRampToValueAtTime(
+    0.001,
+    audioCtx.currentTime + duration,
+  );
+  osc.connect(gain);
+  gain.connect(audioCtx.destination);
+  osc.start();
+  osc.stop(audioCtx.currentTime + duration);
+}
+
+// each sound is a list of [frequency, length] notes
+const sounds = {
+  feed: [
+    [500, 0.1],
+    [700, 0.15],
+  ],
+  play: [
+    [600, 0.08],
+    [800, 0.08],
+    [1000, 0.12],
+  ],
+  sleep: [
+    [400, 0.2],
+    [300, 0.3],
+  ],
+  medicine: [
+    [700, 0.1],
+    [500, 0.1],
+    [900, 0.2],
+  ],
+  death: [
+    [300, 0.3],
+    [200, 0.3],
+    [100, 0.6],
+  ],
+};
+
+function playSound(name) {
+  sounds[name].forEach(function (note, i) {
+    setTimeout(function () {
+      beep(note[0], note[1]);
+    }, i * 120);
+  });
+}
+
+function toggleMute() {
+  muted = !muted;
+  localStorage.setItem(MUTE_KEY, muted);
+  muteBtn.textContent = muted ? "🔇" : "🔊";
+}
+
+muteBtn.textContent = muted ? "🔇" : "🔊";
+muteBtn.addEventListener("click", toggleMute);
 
 // 4. ACTIONS: change the state, then re-render
 function feed() {
   if (!pet.alive || pet.paused) return;
   pet.hunger = clamp(pet.hunger - 10);
   render();
+  react("🍖");
+  playSound("feed");
 }
 
 function play() {
@@ -81,12 +154,16 @@ function play() {
   pet.happiness = clamp(pet.happiness + 10);
   pet.energy = clamp(pet.energy - 10);
   render();
+  react("❤️");
+  playSound("play");
 }
 
 function sleep() {
   if (!pet.alive || pet.paused) return;
   pet.energy = clamp(pet.energy + 20);
   render();
+  react("💤");
+  playSound("sleep");
 }
 
 // 5. LISTEN: connect buttons to actions
@@ -118,8 +195,10 @@ function applyTick() {
 
 // What the timer calls: change state, then draw
 function tick() {
+  const wasAlive = pet.alive;
   applyTick();
   render();
+  if (wasAlive && !pet.alive) playSound("death");
 }
 
 // MOOD: decide how the pet feels based on its stats
@@ -169,6 +248,8 @@ function render() {
 
   // face
   petEl.textContent = moodEmoji[getMood()];
+  petEl.dataset.mood = getMood();
+  document.title = moodEmoji[getMood()] + " Tamagotchi";
 
   // stage and life
   petEl.style.fontSize = stageSize[getStage()] + "px";
@@ -186,6 +267,8 @@ function medicine() {
   if (!pet.alive || pet.paused) return;
   pet.neglect = 0;
   render();
+  react("💊");
+  playSound("medicine");
 }
 
 function restart() {
@@ -213,3 +296,18 @@ pauseRestartBtn.addEventListener("click", restart);
 
 load();
 render();
+
+// REACTION: pop the pet and float an emoji up
+function react(emoji) {
+  petEl.classList.remove("pop");
+  void petEl.offsetWidth; // forces the browser to restart the animation
+  petEl.classList.add("pop");
+
+  const floater = document.createElement("div");
+  floater.className = "floater";
+  floater.textContent = emoji;
+  gameEl.appendChild(floater);
+  floater.addEventListener("animationend", function () {
+    floater.remove();
+  });
+}
