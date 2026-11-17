@@ -49,3 +49,11 @@ button {
 .fill.danger {
   background: #e53935;
 }
+
+#pause-menu {
+  margin-top: 16px;
+  padding: 12px;
+  background: #fff3cd;
+  border: 2px solid #333;
+  border-radius: 10px;
+}
