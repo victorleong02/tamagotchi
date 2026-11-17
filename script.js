@@ -11,10 +11,39 @@ function newPet() {
   };
 }
 
+function save() {
+  const data = { pet: pet, savedAt: Date.now() };
+  localStorage.setItem(SAVE_KEY, JSON.stringify(data));
+}
+
+function load() {
+  try {
+    const text = localStorage.getItem(SAVE_KEY);
+    if (!text) return; // no save yet, keep the fresh pet
+
+    const data = JSON.parse(text);
+    pet = Object.assign(newPet(), data.pet);
+
+    // how many ticks did we miss while away?
+    const elapsed = Date.now() - data.savedAt;
+    const missed = Math.min(MAX_CATCHUP, Math.floor(elapsed / TICK_MS));
+
+    for (let i = 0; i < missed; i++) {
+      applyTick();
+    }
+  } catch (error) {
+    console.log("Could not load save:", error);
+    pet = newPet();
+  }
+}
+
 let pet = newPet();
 
 const SICK_AT = 8; // neglect level where the pet gets sick
 const DEATH_AT = 20; // neglect level where the pet dies
+const TICK_MS = 500; // time between ticks (3 seconds)
+const SAVE_KEY = "tamagotchi-save"; // the name our save is stored under
+const MAX_CATCHUP = 200; // most ticks we'll replay after being away
 
 // Keeps a number between 0 and 100
 function clamp(value) {
@@ -66,7 +95,7 @@ playBtn.addEventListener("click", play);
 sleepBtn.addEventListener("click", sleep);
 
 // TIME: every 3 seconds, the pet's needs change on their own
-function tick() {
+function applyTick() {
   if (!pet.alive || pet.paused) return;
 
   pet.hunger = clamp(pet.hunger + 2);
@@ -74,19 +103,22 @@ function tick() {
   pet.energy = clamp(pet.energy - 1);
   pet.age = pet.age + 1;
 
-  // is the pet being neglected?
   const neglected = pet.hunger >= 90 || pet.happiness <= 10 || pet.energy <= 10;
 
   if (neglected) {
     pet.neglect = pet.neglect + 1;
   } else {
-    pet.neglect = Math.max(0, pet.neglect - 1); // recovers when cared for
+    pet.neglect = Math.max(0, pet.neglect - 1);
   }
 
   if (pet.neglect >= DEATH_AT) {
     pet.alive = false;
   }
+}
 
+// What the timer calls: change state, then draw
+function tick() {
+  applyTick();
   render();
 }
 
@@ -109,7 +141,7 @@ function getMood() {
   return "happy";
 }
 
-setInterval(tick, 500); // every 5 seconds, the pet's needs change on their own
+setInterval(tick, TICK_MS);
 
 const stageSize = { baby: 60, puppy: 100, adult: 140 };
 
@@ -147,6 +179,7 @@ function render() {
   // pause menu
   pauseMenu.hidden = !pet.paused;
   pauseBtn.hidden = pet.paused || !pet.alive;
+  save();
 }
 
 function medicine() {
@@ -178,4 +211,5 @@ pauseBtn.addEventListener("click", pause);
 resumeBtn.addEventListener("click", resume);
 pauseRestartBtn.addEventListener("click", restart);
 
+load();
 render();
