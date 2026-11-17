@@ -5,6 +5,11 @@ const pet = {
   energy: 50,
 };
 
+// Keeps a number between 0 and 100
+function clamp(value) {
+  return Math.min(100, Math.max(0, value));
+}
+
 // 2. FIND the elements on the page
 const hungerEl = document.getElementById("hunger");
 const happinessEl = document.getElementById("happiness");
@@ -23,18 +28,18 @@ function render() {
 
 // 4. ACTIONS: change the state, then re-render
 function feed() {
-  pet.hunger = pet.hunger - 10;
+  pet.hunger = clamp(pet.hunger - 10);
   render();
 }
 
 function play() {
-  pet.happiness = pet.happiness + 10;
-  pet.energy = pet.energy - 10;
+  pet.happiness = clamp(pet.happiness + 10);
+  pet.energy = clamp(pet.energy - 10);
   render();
 }
 
 function sleep() {
-  pet.energy = pet.energy + 20;
+  pet.energy = clamp(pet.energy + 20);
   render();
 }
 
@@ -44,4 +49,13 @@ playBtn.addEventListener("click", play);
 sleepBtn.addEventListener("click", sleep);
 
 // Show the starting numbers
+// TIME: every 3 seconds, the pet's needs change on their own
+function tick() {
+  pet.hunger = clamp(pet.hunger + 2);
+  pet.happiness = clamp(pet.happiness - 1);
+  pet.energy = clamp(pet.energy - 1);
+  render();
+}
+
+setInterval(tick, 1000);
 render();
