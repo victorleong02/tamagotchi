@@ -14,10 +14,13 @@ function clamp(value) {
 const hungerEl = document.getElementById("hunger");
 const happinessEl = document.getElementById("happiness");
 const energyEl = document.getElementById("energy");
-
 const feedBtn = document.getElementById("feed-btn");
 const playBtn = document.getElementById("play-btn");
 const sleepBtn = document.getElementById("sleep-btn");
+const petEl = document.getElementById("pet");
+const hungerFill = document.getElementById("hunger-fill");
+const happinessFill = document.getElementById("happiness-fill");
+const energyFill = document.getElementById("energy-fill");
 
 // 3. RENDER: copy the state onto the screen
 function render() {
@@ -57,5 +60,37 @@ function tick() {
   render();
 }
 
+// MOOD: decide how the pet feels based on its stats
+const moodEmoji = {
+  happy: "🐶",
+  hungry: "🥺",
+  tired: "😴",
+  sad: "😢",
+};
+
+function getMood() {
+  if (pet.hunger > 80) return "hungry";
+  if (pet.energy < 20) return "tired";
+  if (pet.happiness < 30) return "sad";
+  return "happy";
+}
 setInterval(tick, 1000);
-render();
+function render() {
+  // numbers
+  hungerEl.textContent = pet.hunger;
+  happinessEl.textContent = pet.happiness;
+  energyEl.textContent = pet.energy;
+
+  // bars
+  hungerFill.style.width = pet.hunger + "%";
+  happinessFill.style.width = pet.happiness + "%";
+  energyFill.style.width = pet.energy + "%";
+
+  // red when things are bad (for hunger, HIGH is bad)
+  hungerFill.classList.toggle("danger", pet.hunger > 70);
+  happinessFill.classList.toggle("danger", pet.happiness < 30);
+  energyFill.classList.toggle("danger", pet.energy < 30);
+
+  // face
+  petEl.textContent = moodEmoji[getMood()];
+}
